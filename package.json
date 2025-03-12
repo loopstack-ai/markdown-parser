@@ -2,9 +2,14 @@
   "name": "@loopstack/markdown-parser",
   "version": "1.0.0",
   "description": "A markdown parser that extracts structured data according to JSON schemas",
+  "author": {
+    "name": "Jakob Klippel",
+    "email": "jakob@loopstack.ai",
+    "url": "https://www.linkedin.com/in/jakob-klippel-414a30261/"
+  },
   "type": "module",
-  "main": "dist/markdown-parser.js",
-  "types": "dist/markdown-parser.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -18,7 +23,6 @@
     "schema",
     "json-schema"
   ],
-  "author": "",
   "license": "MIT",
   "dependencies": {
     "@types/mdast": "^4.0.4",
