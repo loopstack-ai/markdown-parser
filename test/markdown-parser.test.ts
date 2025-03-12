@@ -1,6 +1,6 @@
 // test/markdown-parser.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MarkdownParser, type MarkdownNode, type JSONSchemaConfigType } from '../src/markdown-parser';
+import { MarkdownParser, SimpleJSONSchema } from '../src/markdown-parser';
 
 describe('MarkdownParser', () => {
   let parser: MarkdownParser;
@@ -9,163 +9,468 @@ describe('MarkdownParser', () => {
     parser = new MarkdownParser();
   });
 
-  describe('getValue', () => {
-    it('should get value from text node', () => {
-      const node: MarkdownNode = { type: 'text', value: 'test text' };
-      expect(parser.getValue(node)).toBe('test text');
-    });
+  describe('parseBetter', () => {
+    it('should parse simple markdown', async () => {
+      const markdown = `# Document
 
-    it('should get value from paragraph node', () => {
-      const node: MarkdownNode = {
-        type: 'paragraph',
-        children: [
-          { type: 'text', value: 'test' },
-          { type: 'text', value: 'paragraph' }
-        ]
-      };
-      expect(parser.getValue(node)).toBe('test paragraph');
-    });
-
-    it('should throw error for unknown node type', () => {
-      const node: MarkdownNode = { type: 'unknown' };
-      expect(() => parser.getValue(node)).toThrow('Unexpected content type: unknown');
-    });
-  });
-
-  describe('traverseAndExtract', () => {
-    it('should handle simple objects', () => {
-      const extracted = { name: 'test', value: 123 };
-      expect(parser.traverseAndExtract(extracted, [])).toEqual(extracted);
-    });
-
-    it('should handle nested objects', () => {
-      const extracted = {
-        user: {
-          name: ' John ',
-          age: 30
-        }
-      };
-      expect(parser.traverseAndExtract(extracted, [])).toEqual({
-        user: {
-          name: 'John',
-          age: 30
-        }
-      });
-    });
-
-    it('should handle arrays', () => {
-      const extracted = {
-        users: {
-          '0': { name: ' Alice ' },
-          '1': { name: ' Bob ' }
-        }
-      };
-      expect(parser.traverseAndExtract(extracted, ['users'])).toEqual({
-        users: [
-          { name: 'Alice' },
-          { name: 'Bob' }
-        ]
-      });
-    });
-  });
-
-  describe('parse', () => {
-    it('should parse simple markdown with basic schema', async () => {
-      const markdown = `# Title
+## Title
 This is the title content.
 
 ## Description
 This is a description.
 `;
 
-      const schema: JSONSchemaConfigType = {
+      const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Title: { type: 'string' },
-          Description: { type: 'string' }
+          Document: {
+            type: 'object',
+            properties: {
+              Title: { type: 'string' },
+              Description: { type: 'string' }
+            },
+            required: ['Title', 'Description']
+          },
         },
-        required: ['Title', 'Description']
+        required: ['Document']
       };
 
-      const result = await parser.parse(markdown, undefined, schema);
+      const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Title: 'This is the title content.',
-        Description: 'This is a description.'
+        Document: {
+          Title: 'This is the title content.',
+          Description: 'This is a description.'
+        }
       });
     });
 
-    it('should parse markdown with lists', async () => {
-      const markdown = `# Features
-- Feature 1
-- Feature 2
-- Feature 3
+    it('should parse paragraph markdown', async () => {
+      const markdown = `# Document
+## Description
+This is a description
+that spans
+
+over multiple paragraphs.
 `;
 
-      const schema: JSONSchemaConfigType = {
+      const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Features: { type: 'string' }
+          Document: {
+            type: 'object',
+            properties: {
+              Description: { type: 'string' }
+            },
+            required: ['Description']
+          },
         },
-        required: ['Features']
+        required: ['Document']
       };
 
-      const result = await parser.parse(markdown, undefined, schema);
+      const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Features: 'Feature 1\nFeature 2\nFeature 3'
+        Document: {
+          Description: 'This is a description\nthat spans\n\nover multiple paragraphs.'
+        }
       });
     });
 
-    it('should parse markdown with arrays', async () => {
-      const markdown = `# Items
-## Item1
-First item
-
-## Item2
-Second item
+    it('should parse strong markdown', async () => {
+      const markdown = `# Document
+## Description
+This is a description **with bold** and __more bold__ and _italic_ contents as well as **bold and _italic_ combined**. It even *emphasis* stuff.
 `;
 
-      const schema: JSONSchemaConfigType = {
+      const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                Item1: { type: 'string' },
-                Item2: { type: 'string' }
-              }
-            }
-          }
+          Document: {
+            type: 'object',
+            properties: {
+              Description: { type: 'string' }
+            },
+            required: ['Description']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          Description: 'This is a description with bold and more bold and italic contents as well as bold and italic combined. It even emphasis stuff.'
+        }
+      });
+    });
+
+    it('should handle inline code markdown', async () => {
+      const markdown = `# Document
+## Description
+This is description with \`code\`
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              Description: { type: 'string' }
+            },
+            required: ['Description']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          Description: 'This is description with code'
+        }
+      });
+    });
+
+    it('should handle list markdown', async () => {
+      const markdown = `# Document
+## Description
+This is description with
+
+- multiple
+- items
+- in a list
+
+## OrderedList
+1. one
+2. two
+3. three
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              Description: { type: 'string' },
+              OrderedList: { type: 'string' },
+            },
+            required: ['Description']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          Description: 'This is description with\n\n- multiple\n- items\n- in a list\n',
+          OrderedList: '1. one\n2. two\n3. three\n',
+        }
+      });
+    });
+
+    it('should handle list markdown for array schema type', async () => {
+      const markdown = `# Document
+
+## OrderedList
+1. one
+2. two
+3. three
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              OrderedList: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                }
+              },
+            },
+            required: ['OrderedList']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          OrderedList: ['one', 'two', 'three'],
+        }
+      });
+    });
+
+    it('should parse nested markdown', async () => {
+      const markdown = `# Document
+
+## Name
+This is the name
+
+## Details
+
+### Title
+This is the title
+
+### Description
+This is the description
+
+## Info
+Some info
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              Name: { type: 'string' },
+              Details: {
+                type: 'object',
+                properties: {
+                  Title: { type: 'string' },
+                  Description: { type: 'string' }
+                },
+                required: ['Title', 'Description'],
+              },
+              Info: { type: 'string' },
+            },
+            required: ['Details', 'Info', 'Name']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          Name: 'This is the name',
+          Details: {
+            Title: 'This is the title',
+            Description: 'This is the description',
+          },
+          Info: 'Some info'
+        }
+      });
+    });
+
+    it('should handle array of objects', async () => {
+      const markdown = `# Document
+
+## ArrayOfObjects
+
+### Item 1
+
+#### Name
+one
+
+### Item 2
+
+#### Name
+two
+
+### Item 3
+
+#### Name
+three
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              ArrayOfObjects: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    Name: {
+                      type: 'string',
+                    }
+                  },
+                  required: ['Name'],
+                }
+              },
+            },
+            required: ['ArrayOfObjects']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          ArrayOfObjects: {
+            'Item 1': {
+              Name: 'one',
+            },
+            'Item 2': {
+              Name: 'two',
+            },
+            'Item 3': {
+              Name: 'three'
+            },
+          },
+        }
+      });
+    });
+
+    it('should handle array of text', async () => {
+      const markdown = `# Document
+
+## ArrayOfText
+
+### Item 1
+one
+
+### Item 2
+two
+
+### Item 3
+three
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              ArrayOfText: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                }
+              },
+            },
+            required: ['ArrayOfText']
+          },
+        },
+        required: ['Document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        Document: {
+          ArrayOfText: {
+            'Item 1': 'one',
+            'Item 2': 'two',
+            'Item 3': 'three',
+          },
+        }
+      });
+    });
+
+  });
+
+  describe('reformatToMatchSchema', () => {
+    it('should reformat an array of objects', async () => {
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Document: {
+            type: 'object',
+            properties: {
+              ArrayOfObjects: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    Name: {
+                      type: 'string',
+                    }
+                  },
+                  required: ['Name'],
+                }
+              },
+            },
+            required: ['ArrayOfObjects']
+          },
+        },
+        required: ['Document']
+      };
+
+      const obj = {
+        Document: {
+          ArrayOfObjects: {
+            'Item 1': {
+              Name: 'one',
+            },
+            'Item 2': {
+              Name: 'two',
+            },
+            'Item 3': {
+              Name: 'three'
+            },
+          },
         }
       };
 
-      const result = await parser.parse(markdown, undefined, schema);
+      const result = parser.reformatToMatchSchema(obj, schema);
+
       expect(result).toEqual({
-        Items: [
-          {
-            Item1: 'First item',
-            Item2: 'Second item'
-          }
-        ]
+        Document: {
+          ArrayOfObjects: [
+            {
+              Name: 'one',
+            },
+            {
+              Name: 'two',
+            },
+            {
+              Name: 'three'
+            },
+          ],
+        }
       });
     });
 
-    it('should validate extracted object against schema', async () => {
-      const markdown = `# Title
-Content
-`;
-
-      const schema: JSONSchemaConfigType = {
+    it('should reformat an array of text', async () => {
+      const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Title: { type: 'string' },
-          Required: { type: 'string' }
+          Document: {
+            type: 'object',
+            properties: {
+              ArrayOfText: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                }
+              },
+            },
+            required: ['ArrayOfText']
+          },
         },
-        required: ['Required']
+        required: ['Document']
       };
 
-      await expect(parser.parse(markdown, undefined, schema)).rejects.toThrow('Result validation failed');
+      const obj = {
+        Document: {
+          ArrayOfText: {
+            'Item 1': 'one',
+            'Item 2': 'two',
+            'Item 3': 'three'
+          },
+        }
+      };
+
+      const result = parser.reformatToMatchSchema(obj, schema);
+
+      expect(result).toEqual({
+        Document: {
+          ArrayOfText: ['one', 'two', 'three'],
+        }
+      });
     });
   });
 });

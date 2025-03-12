@@ -1,196 +1,287 @@
-// src/markdown-parser.ts
 import { set, get } from 'lodash';
 import Ajv from 'ajv';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
+import { Root } from 'remark-parse/lib';
+import { Heading, List, ListItem, Literal, Node, Paragraph, Parent } from 'mdast';
 
-export interface JSONSchemaConfigType {
+export interface SimpleJSONSchema {
   type: string;
   properties?: Record<string, any>;
   required?: string[];
   items?: any;
-  [key: string]: any;
 }
 
-export interface MarkdownNode {
-  type: string;
-  children?: MarkdownNode[];
-  value?: string;
-  depth?: number;
-  [key: string]: any;
+class ContextDto {
+  //
+  // tree: {
+  //   path: string[];
+  //   schema: SimpleJSONSchema[];
+  //   depth: number[];
+  // }[];
+
+  path: string[];
+  schema: SimpleJSONSchema[];
+  depth: number[];
+
+  result: Record<string, any>;
+
+  constructor(schema: SimpleJSONSchema) {
+    this.path = ['root'];
+    this.schema = [schema];
+    this.depth = [0];
+    this.result = {};
+  }
+
+  getCurrentDepth() {
+    return this.depth[this.depth.length - 1];
+  }
+
+  getCurrentSchema() {
+    return this.schema[this.schema.length -1];
+  }
+
+  getPropertySchema(name: string) {
+    return this.getCurrentSchema()?.properties?.[name];
+  }
+
+  getArrayItemSchema() {
+    return this.getCurrentSchema().items;
+  }
+
+  getPropertyPath() {
+    return this.path.slice(1); // exclude the root key
+  }
+
+  addValue(value: string[] | string) {
+    const path = this.getPropertyPath();
+    const current = get(this.result, path);
+
+    let newValue: any;
+    if (Array.isArray(value)) {
+      newValue = null === current ? value : [...current, ...value];
+    } else {
+      newValue = null === current ? value : `${current}\n\n${value}`;
+    }
+    set(this.result, path, newValue);
+  }
+
+  addProperty(name: string, depth: number, schema: SimpleJSONSchema) {
+    this.path.push(name);
+    this.depth.push(depth);
+    this.schema.push(schema);
+
+    const path = this.getPropertyPath();
+    set(this.result, path, null);
+  }
+
+  goLevelUp() {
+    this.path.pop();
+    this.schema.pop();
+    this.depth.pop();
+  }
 }
 
 export class MarkdownParser {
-  getValue(node: MarkdownNode): string {
-    if (
-      [
-        'paragraph',
-        'strong',
-        'heading',
-        'list',
-        'listItem',
-        'emphasis',
-      ].includes(node.type)
-    ) {
-      return node.children
-        ?.map((child) => this.getValue(child))
-        .join(' ')
-        .trim() || '';
+
+  private parseList(node: List): string[] {
+    return node.children.map((item, index) => this.parseArrayItemType(item));
+  }
+
+  private parseChildValue(node: Parent): string {
+    return node.children.map((item, index) => this.parseStringType(item, index, node)).join('');
+  }
+
+  private parseLiteralValue(node: Literal): string {
+    return node.value;
+  }
+
+  private parseArrayItemType(node: Node): string {
+    switch (node.type) {
+      case 'listItem':
+        return this.parseChildValue(node as ListItem);
     }
 
-    if (['code', 'text', 'inlineCode'].includes(node.type)) {
-      return node.value?.trim() || '';
+    throw new Error('Unexpected array item type: ' + node.type);
+  }
+
+  private parseValue<T>(node: Node, type: string): T {
+    switch (type) {
+      case 'array':
+        return this.parseArrayType(node) as T;
+      case 'string':
+        return this.parseStringType(node) as T;
+      case 'number':
+        return Number(this.parseStringType(node)) as T;
+      case 'boolean':
+        return !this.parseStringType(node) as T;
+      case 'null':
+        return null as T;
+    }
+
+    throw new Error(`Unknown schema type ${type}`);
+  }
+
+  private parseArrayType(node: Node): string[] {
+    switch (node.type) {
+      case 'list':
+        return this.parseList(node as List);
+    }
+
+    throw new Error('Unexpected array type: ' + node.type);
+  }
+
+  private parseStringType(node: Node, index: number = 0, parent?: Parent): string {
+    switch (node.type) {
+      case 'text':
+      case 'inlineCode':
+      case 'code':
+      case 'html':
+      case 'yaml':
+        return this.parseLiteralValue(node as Literal);
+      case 'paragraph':
+      case 'strong':
+      case 'italic':
+      case 'emphasis':
+      case 'footnote':
+      case 'footnoteDefinition':
+      case 'link':
+      case 'linkReference':
+      case 'list':
+        return this.parseChildValue(node as Parent);
+      case 'delete':
+      case 'thematicBreak':
+        return '';
+      case 'break':
+        return '\n';
+      case 'listItem':
+        const parentNode = parent as List;
+        const prefix = parentNode.ordered ? (index + 1).toString() + '.' : '-';
+        return `${prefix} ${this.parseChildValue(node as ListItem)}\n`;
     }
 
     throw new Error('Unexpected content type: ' + node.type);
   }
 
-  traverseAndExtract(extracted: Record<string, any>, isArray: string[]): Record<string, any> {
-    const newObject: Record<string, any> = {};
-    const keys = Object.keys(extracted);
+  private reduceAstToObject(
+    node: Root,
+    context: ContextDto,
+  ) {
+    const children = [...node.children];
+    while (children.length) {
+      const item = children.shift()!;
 
-    for (const key of keys) {
-      if (isArray.includes(key)) {
-        newObject[key] = Object.values(extracted[key]).map((value) => {
-          return this.traverseAndExtract(value as Record<string, any>, isArray);
-        });
-      } else if (
-        typeof extracted[key] === 'object' &&
-        !Array.isArray(extracted[key])
-      ) {
-        newObject[key] = this.traverseAndExtract(extracted[key] as Record<string, any>, isArray);
-      } else {
-        newObject[key] =
-          typeof extracted[key] === 'string'
-            ? extracted[key].trim()
-            : extracted[key];
-      }
-    }
+      switch (item.type) {
+        case 'heading':
 
-    return newObject;
-  }
-
-  extractObject(
-    node: MarkdownNode,
-    rootSchema: JSONSchemaConfigType,
-    currentKey: string[] = [],
-    currentSchema: JSONSchemaConfigType[] = [],
-    currentDepth: number[] = [],
-    isArray: string[] = [],
-  ): Record<string, any> {
-    const extracted: Record<string, any> = {};
-
-    if (node.children) {
-      if (node.children[0]?.type !== 'heading') {
-        throw new Error('should start with a heading');
-      }
-
-      for (const child of node.children) {
-        let key = currentKey[currentKey.length - 1];
-        let schema = currentSchema[currentSchema.length - 1] ?? rootSchema;
-        let depth = currentDepth[currentDepth.length - 1] ?? 0;
-
-        if (child.type === 'heading') {
-          if (child.depth && child.depth <= depth) {
-            while (child.depth && child.depth <= depth) {
-              currentKey.pop();
-              currentSchema.pop();
-              currentDepth.pop();
-              key = currentKey[currentKey.length - 1];
-              depth = currentDepth[currentDepth.length - 1];
-              schema = currentSchema[currentSchema.length - 1];
-            }
+          // reduce current depth until at item level
+          while (item.depth <= context.getCurrentDepth()) {
+            context.goLevelUp();
           }
 
-          const newKey = child.children?.[0]?.value?.trim() || '';
-          const propSchema = schema.properties?.[newKey];
+          // get the heading name as property name
+          const propertyName = this.parseChildValue(item as Heading) ?? 'Object';
 
-          if (propSchema) {
-            currentKey.push(newKey);
-            currentSchema.push(propSchema);
-            currentDepth.push(child.depth || 0);
+          // try to get the schema from property definition
+          const propertySchema = context.getPropertySchema(propertyName);
+          if (propertySchema) {
+            context.addProperty(propertyName, item.depth, propertySchema);
             continue;
           }
 
-          if (schema.type === 'array') {
-            const itemSchema = schema.items;
-            if (itemSchema && itemSchema.type === 'object') {
-              isArray.push(key);
-              currentKey.push(newKey);
-              currentSchema.push(itemSchema);
-              currentDepth.push(child.depth || 0);
-              continue;
-            } else {
-              const current = get(extracted, currentKey) ?? [];
-              current.push(this.getValue(child));
-              set(extracted, currentKey, current);
-              continue;
-            }
+          // try to get the schema from array items definition
+          const itemSchema = context.getArrayItemSchema();
+          if (itemSchema) {
+            context.addProperty(propertyName, item.depth, itemSchema);
+            continue;
           }
-        }
 
-        if (schema.type === 'array') {
-          switch (child.type) {
-            case 'paragraph':
-            case 'code':
-              const current = get(extracted, currentKey) ?? [];
-              if (current.length > 0) {
-                current[current.length - 1] =
-                  current[current.length - 1] + '\n' + this.getValue(child);
-                set(extracted, currentKey, current);
-              }
-              continue;
-            case 'list':
-              set(
-                extracted,
-                currentKey,
-                child.children?.map((listItem: MarkdownNode) => {
-                  const combined: string[] = [];
-                  for (const child2 of listItem.children || []) {
-                    combined.push(this.getValue(child2));
-                  }
-
-                  return combined.join('\n').trim();
-                }) ?? [],
-              );
-              continue;
-            default:
-              break;
-          }
-        } else {
-          switch (child.type) {
-            case 'list':
-              let currentL = get(extracted, currentKey) ?? '';
-              currentL += (
-                child.children?.map((listItem: MarkdownNode) => {
-                  const combined: string[] = [];
-                  for (const child2 of listItem.children || []) {
-                    combined.push(this.getValue(child2));
-                  }
-
-                  return combined.join('\n').trim();
-                }) ?? []
-              ).join('\n');
-              set(extracted, currentKey, currentL);
-              continue;
-            default:
-              let current = get(extracted, currentKey) ?? '';
-              current += this.getValue(child) + '\n';
-              set(extracted, currentKey, current);
-              continue;
-          }
-        }
-
-        throw new Error(
-          `Unexpected content type for section "${key}" in Markdown: ${schema.type}, ${child.type}`,
-        );
+          throw new Error(`Heading element has no schema definition.`)
+        default:
+          // other elements that are not structural (headings) will be parsed and merged to current object path
+          const value = this.parseValue<any>(item, context.getCurrentSchema().type);
+          context.addValue(value);
       }
     }
 
-    return this.traverseAndExtract(extracted, isArray);
+    return context.result;
   }
 
-  validate(obj: any, schema: JSONSchemaConfigType): void {
+  private getAst(content: string): Root {
+    return unified()
+      .use(remarkParse)
+      .parse(content);
+  }
+
+  /**
+   * Converts an object to match a JSON schema, reformatting object properties
+   * that are defined as arrays in the schema.
+   */
+  reformatToMatchSchema(
+    obj: any,
+    schema: SimpleJSONSchema
+  ): any {
+    if (!obj) return obj;
+
+    // If schema indicates an array but obj is an object, reformat and process each item
+    if (schema.type === 'array' && typeof obj === 'object' && !Array.isArray(obj)) {
+      return Object.keys(obj).map(key => {
+        const value = obj[key];
+        if (schema.items) {
+          return this.reformatToMatchSchema(value, schema.items);
+        }
+        return value;
+      });
+    }
+
+    // If both obj and schema are objects, process each property
+    if (schema.type === 'object' && typeof obj === 'object' && !Array.isArray(obj)) {
+      const result: Record<string, any> = {};
+      if (schema.properties) {
+        Object.keys(schema.properties).forEach(propName => {
+          if (obj[propName] !== undefined) {
+            result[propName] = this.reformatToMatchSchema(
+              obj[propName],
+              schema.properties![propName]
+            );
+          }
+        });
+      }
+
+      return result;
+    }
+
+    // If schema is array and obj is already an array, process each item
+    if (schema.type === 'array' && Array.isArray(obj) && schema.items) {
+      return obj.map(item => this.reformatToMatchSchema(item, schema.items!));
+    }
+
+    // For primitive types or when no further processing is needed
+    return obj;
+  }
+
+  private parseToObject<T>(
+    content: string,
+    schema: SimpleJSONSchema,
+  ): T {
+    const ast = this.getAst(content);
+    const context = new ContextDto(schema);
+    const obj = this.reduceAstToObject(ast, context);
+    return obj as T;
+  }
+
+  parse<T>(
+    content: string,
+    schema: SimpleJSONSchema,
+  ): T {
+    const parsedObject = this.parseToObject(content, schema);
+    const result = this.reformatToMatchSchema(parsedObject, schema);
+    this.validate(result, schema);
+
+    return result as T
+  }
+
+  validate(obj: any, schema: SimpleJSONSchema): void {
     const ajv = new Ajv();
     const validate = ajv.compile(schema);
     if (!validate(obj)) {
@@ -198,46 +289,6 @@ export class MarkdownParser {
       console.log(validate.errors);
       throw new Error(`Result validation failed.`);
     }
-  }
-
-  convertSimpleMarkdownAst(nodes: any[]): any[] {
-    return nodes.map(node => {
-      const converted: any = { type: node.type };
-
-      if (node.content) {
-        converted.value = typeof node.content === 'string'
-          ? node.content
-          : this.convertSimpleMarkdownAst(node.content).map(n => n.value).join('');
-      }
-
-      if (node.items) {
-        converted.children = this.convertSimpleMarkdownAst(node.items);
-      }
-
-      return converted;
-    });
-  }
-
-  async parse(
-    markdownContent: string,
-    rootKey: string | undefined,
-    schema: JSONSchemaConfigType,
-  ): Promise<Record<string, any>> {
-    const ast = unified()
-      .use(remarkParse)
-      .parse(markdownContent);
-
-    const obj = this.extractObject(
-      ast as unknown as MarkdownNode,
-      schema,
-      rootKey ? [rootKey] : [],
-      rootKey ? [schema] : [],
-      rootKey ? [0] : [],
-    );
-
-    this.validate(obj, schema);
-
-    return obj;
   }
 }
 

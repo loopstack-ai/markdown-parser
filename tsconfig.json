@@ -11,7 +11,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2020"],
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "strictNullChecks": true,
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*.test.ts"]

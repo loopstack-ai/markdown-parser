@@ -1,5 +1,5 @@
 {
-  "name": "markdown-schema-parser",
+  "name": "@loopstack/markdown-parser",
   "version": "1.0.0",
   "description": "A markdown parser that extracts structured data according to JSON schemas",
   "type": "module",
@@ -21,6 +21,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/unist": "^3.0.3",
     "ajv": "^8.12.0",
     "lodash": "^4.17.21",
     "remark-parse": "^10.0.2",

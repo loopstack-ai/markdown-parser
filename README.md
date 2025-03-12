@@ -1,6 +1,6 @@
-# Markdown Schema Parser
+# Loopstack Markdown Parser
 
-A modern TypeScript/ESM module for parsing Markdown files according to a JSON schema structure. This parser maps structured Markdown content to JavaScript objects based on provided JSON schema definitions.
+A TypeScript/ESM module for parsing Markdown files according to a JSON schema structure. This parser maps structured Markdown content to JavaScript objects based on provided JSON schema definitions.
 
 ## Features
 
@@ -8,13 +8,11 @@ A modern TypeScript/ESM module for parsing Markdown files according to a JSON sc
 - Validate extracted data against JSON schemas
 - Support for nested object structures
 - Handle arrays and lists in Markdown
-- TypeScript support with full type definitions
-- Simple and intuitive API
 
 ## Installation
 
 ```bash
-npm install markdown-schema-parser
+npm install @loopstack/markdown-parser
 ```
 
 ## Usage
@@ -22,13 +20,13 @@ npm install markdown-schema-parser
 ### TypeScript
 
 ```typescript
-import { MarkdownParser, JSONSchemaConfigType } from 'markdown-schema-parser';
+import { MarkdownParser, SimpleJSONSchema } from '@loopstack/markdown-parser';
 
 // Create a parser instance
 const parser = new MarkdownParser();
 
 // Define a schema for your markdown structure
-const schema: JSONSchemaConfigType = {
+const schema: SimpleJSONSchema = {
   type: 'object',
   properties: {
     Title: { type: 'string' },
@@ -70,7 +68,7 @@ Another great feature.
 
 // Parse the markdown content
 async function parseMarkdown() {
-  const result = await parser.parse(markdown, undefined, schema);
+  const result = await parser.parse(markdown, schema);
   console.log(result);
 }
 
@@ -96,7 +94,7 @@ parseMarkdown();
 ### JavaScript
 
 ```javascript
-import { MarkdownParser } from 'markdown-schema-parser';
+import { MarkdownParser } from '@loopstack/markdown-parser';
 
 // Create a parser instance
 const parser = new MarkdownParser();
@@ -119,13 +117,12 @@ const result = await parser.parse(markdown, undefined, schema);
 
 ### `MarkdownParser` Class
 
-#### `parse(markdownContent, rootKey, schema)`
+#### `parse(markdownContent, schema)`
 
-Parses markdown content according to a JSON schema.
+Parses markdown content according to a JSON schema and validates it against the schema.
 
 - `markdownContent` (String): The markdown text to parse
-- `rootKey` (String, optional): A root key to use for the resulting object
-- `schema` (JSONSchemaConfigType): A JSON schema definition that describes the structure of the markdown content
+- `schema` (SimpleJSONSchema): A JSON schema definition that describes the structure of the markdown content
 
 Returns: A Promise that resolves to the parsed object structure.
 
@@ -134,39 +131,9 @@ Returns: A Promise that resolves to the parsed object structure.
 Validates an object against a JSON schema.
 
 - `object` (any): The object to validate
-- `schema` (JSONSchemaConfigType): The JSON schema to validate against
+- `schema` (SimpleJSONSchema): The JSON schema to validate against
 
 Throws an error if validation fails.
-
-### Types
-
-#### `JSONSchemaConfigType`
-
-Represents a JSON Schema configuration.
-
-```typescript
-interface JSONSchemaConfigType {
-  type: string;
-  properties?: Record<string, any>;
-  required?: string[];
-  items?: any;
-  [key: string]: any;
-}
-```
-
-#### `MarkdownNode`
-
-Represents a node in the Markdown AST.
-
-```typescript
-interface MarkdownNode {
-  type: string;
-  children?: MarkdownNode[];
-  value?: string;
-  depth?: number;
-  [key: string]: any;
-}
-```
 
 ## Development
 
@@ -180,12 +147,6 @@ npm run build
 
 ```bash
 npm test
-```
-
-### Coverage
-
-```bash
-npm run test:coverage
 ```
 
 ## License
