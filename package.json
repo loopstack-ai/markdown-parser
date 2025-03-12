@@ -4,7 +4,6 @@
   "description": "A markdown parser that extracts structured data according to JSON schemas",
   "author": {
     "name": "Jakob Klippel",
-    "email": "jakob@loopstack.ai",
     "url": "https://www.linkedin.com/in/jakob-klippel-414a30261/"
   },
   "type": "module",

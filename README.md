@@ -154,6 +154,11 @@ npm run build
 npm test
 ```
 
+## Author
+
+**Jakob Klippel**  
+LinkedIn: [Jakob Klippel](https://www.linkedin.com/in/jakob-klippel-414a30261/)
+
 ## License
 
 MIT
