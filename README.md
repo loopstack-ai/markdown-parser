@@ -53,16 +53,21 @@ This is a product description.
 More detailed information about the product.
 
 # Features
-## Name
+
+## Feature 1
+
+### Name
 Feature 1
 
-## Details
+### Details
 This is an amazing feature.
 
-## Name
+## Feature 2
+
+### Name
 Feature 2
 
-## Details
+### Details
 Another great feature.
 `;
 
@@ -110,7 +115,7 @@ const schema = {
 };
 
 // Parse the markdown content
-const result = await parser.parse(markdown, undefined, schema);
+const result = await parser.parse(markdown, schema);
 ```
 
 ## API

@@ -260,7 +260,7 @@ export class MarkdownParser {
     return obj;
   }
 
-  private parseToObject<T>(
+  parseToObject<T>(
     content: string,
     schema: SimpleJSONSchema,
   ): T {

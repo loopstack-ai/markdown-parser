@@ -9,7 +9,7 @@ describe('MarkdownParser', () => {
     parser = new MarkdownParser();
   });
 
-  describe('parseBetter', () => {
+  describe('parseToObject', () => {
     it('should parse simple markdown', async () => {
       const markdown = `# Document
 
@@ -472,5 +472,71 @@ three
         }
       });
     });
+  });
+
+  describe('parse', () => {
+    it('should parse the readme example correctly', async () => {
+      const markdown = `# Title
+This is a product description.
+
+# Description
+More detailed information about the product.
+
+# Features
+
+## Feature 1
+
+### Name
+Feature 1
+
+### Details
+This is an amazing feature.
+
+## Feature 2
+
+### Name
+Feature 2
+
+### Details
+Another great feature.`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          Title: { type: 'string' },
+          Description: { type: 'string' },
+          Features: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                Name: { type: 'string' },
+                Details: { type: 'string' }
+              }
+            }
+          }
+        },
+        required: ['Title']
+      };
+
+      const result = parser.parse(markdown, schema);
+
+      expect(result).toEqual({
+        Title: 'This is a product description.',
+        Description: 'More detailed information about the product.',
+        Features: [
+          {
+            Name: 'Feature 1',
+            Details: 'This is an amazing feature.'
+          },
+          {
+            Name: 'Feature 2',
+            Details: 'Another great feature.'
+          }
+        ]
+      });
+
+    });
+
   });
 });
