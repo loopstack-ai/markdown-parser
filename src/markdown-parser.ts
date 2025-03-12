@@ -1,4 +1,4 @@
-import { set, get } from 'lodash';
+import { set, get } from 'lodash-es';
 import Ajv from 'ajv';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
