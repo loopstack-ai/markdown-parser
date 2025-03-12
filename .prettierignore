@@ -1,0 +1,17 @@
+# Build artifacts
+dist
+build
+coverage
+
+# Package manager files
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE files
+.idea
+.vscode
+
+# Misc
+.DS_Store

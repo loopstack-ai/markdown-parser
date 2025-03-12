@@ -1,1 +1,1 @@
-export * from './markdown-parser.js'
+export * from './markdown-parser.js';

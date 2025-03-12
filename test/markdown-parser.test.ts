@@ -1,4 +1,3 @@
-// test/markdown-parser.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MarkdownParser, SimpleJSONSchema } from '../src/markdown-parser';
 
