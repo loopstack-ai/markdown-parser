@@ -6,6 +6,11 @@
     "name": "Jakob Klippel",
     "url": "https://www.linkedin.com/in/jakob-klippel-414a30261/"
   },
+  "homepage": "https://loopstack.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loopstack-ai/markdown-parser"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
