@@ -203,7 +203,7 @@ export class MarkdownParser {
             continue;
           }
 
-          throw new Error(`Heading element has no schema definition.`);
+          throw new Error(`Heading element ${propertyName} has no schema definition.`);
         default:
           // other elements that are not structural (headings) will be parsed and merged to current object path
           const value = this.parseValue<any>(
@@ -289,7 +289,9 @@ export class MarkdownParser {
   }
 
   validate(obj: any, schema: SimpleJSONSchema): void {
-    const ajv = new Ajv();
+    const ajv = new Ajv({
+      strict: false,
+    });
     const validate = ajv.compile(schema);
     if (!validate(obj)) {
       console.log(obj);
