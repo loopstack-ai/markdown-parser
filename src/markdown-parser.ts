@@ -173,6 +173,10 @@ export class MarkdownParser {
     throw new Error('Unexpected content type: ' + node.type);
   }
 
+  lowerCaseFirst (str: string) {
+    return str.charAt(0).toLowerCase() + str.slice(1);
+  }
+
   private reduceAstToObject(node: Root, context: ContextDto) {
     const children = [...node.children];
     while (children.length) {
@@ -186,8 +190,9 @@ export class MarkdownParser {
           }
 
           // get the heading name as property name
+          // make sure its lower case first
           const propertyName =
-            this.parseChildValue(item as Heading) ?? 'Object';
+            this.lowerCaseFirst(this.parseChildValue(item as Heading) ?? 'Object');
 
           // try to get the schema from property definition
           const propertySchema = context.getPropertySchema(propertyName);
