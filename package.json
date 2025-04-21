@@ -1,6 +1,6 @@
 {
   "name": "@loopstack/markdown-parser",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A markdown parser that extracts structured data according to JSON schemas",
   "author": {
     "name": "Jakob Klippel",
