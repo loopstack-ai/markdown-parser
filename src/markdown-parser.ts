@@ -120,7 +120,7 @@ export class MarkdownParser {
       case 'number':
         return Number(this.parseStringType(node)) as T;
       case 'boolean':
-        return !this.parseStringType(node) as T;
+        return ('true' === this.parseStringType(node).toLowerCase()) as T;
       case 'null':
         return null as T;
     }
