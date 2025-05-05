@@ -22,23 +22,23 @@ This is a description.
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Title: { type: 'string' },
-              Description: { type: 'string' }
+              title: { type: 'string' },
+              description: { type: 'string' }
             },
-            required: ['Title', 'Description']
+            required: ['title', 'description']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Title: 'This is the title content.',
-          Description: 'This is a description.'
+        document: {
+          title: 'This is the title content.',
+          description: 'This is a description.'
         }
       });
     });
@@ -55,21 +55,21 @@ over multiple paragraphs.
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Description: { type: 'string' }
+              description: { type: 'string' }
             },
-            required: ['Description']
+            required: ['description']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Description: 'This is a description\nthat spans\n\nover multiple paragraphs.'
+        document: {
+          description: 'This is a description\nthat spans\n\nover multiple paragraphs.'
         }
       });
     });
@@ -83,21 +83,21 @@ This is a description **with bold** and __more bold__ and _italic_ contents as w
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Description: { type: 'string' }
+              description: { type: 'string' }
             },
-            required: ['Description']
+            required: ['description']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Description: 'This is a description with bold and more bold and italic contents as well as bold and italic combined. It even emphasis stuff.'
+        document: {
+          description: 'This is a description with bold and more bold and italic contents as well as bold and italic combined. It even emphasis stuff.'
         }
       });
     });
@@ -111,21 +111,21 @@ This is description with \`code\`
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Description: { type: 'string' }
+              description: { type: 'string' }
             },
-            required: ['Description']
+            required: ['description']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Description: 'This is description with code'
+        document: {
+          description: 'This is description with code'
         }
       });
     });
@@ -148,23 +148,23 @@ This is description with
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Description: { type: 'string' },
-              OrderedList: { type: 'string' },
+              description: { type: 'string' },
+              orderedList: { type: 'string' },
             },
-            required: ['Description']
+            required: ['description']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Description: 'This is description with\n\n- multiple\n- items\n- in a list\n',
-          OrderedList: '1. one\n2. two\n3. three\n',
+        document: {
+          description: 'This is description with\n\n- multiple\n- items\n- in a list\n',
+          orderedList: '1. one\n2. two\n3. three\n',
         }
       });
     });
@@ -181,26 +181,59 @@ This is description with
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              OrderedList: {
+              orderedList: {
                 type: 'array',
                 items: {
                   type: 'string',
                 }
               },
             },
-            required: ['OrderedList']
+            required: ['orderedList']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          OrderedList: ['one', 'two', 'three'],
+        document: {
+          orderedList: ['one', 'two', 'three'],
+        }
+      });
+    });
+
+    it('should handle optional (null) values', async () => {
+      const markdown = `# Document
+
+## Description
+
+## Title
+This is the title content.
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          document: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              description: { type: ['string', 'null'] }
+            },
+            required: ['title']
+          },
+        },
+        required: ['document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        document: {
+          title: 'This is the title content.',
+          description: null
         }
       });
     });
@@ -226,35 +259,35 @@ Some info
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              Name: { type: 'string' },
-              Details: {
+              name: { type: 'string' },
+              details: {
                 type: 'object',
                 properties: {
-                  Title: { type: 'string' },
-                  Description: { type: 'string' }
+                  title: { type: 'string' },
+                  description: { type: 'string' }
                 },
-                required: ['Title', 'Description'],
+                required: ['title', 'description'],
               },
-              Info: { type: 'string' },
+              info: { type: 'string' },
             },
-            required: ['Details', 'Info', 'Name']
+            required: ['details', 'info', 'name']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          Name: 'This is the name',
-          Details: {
-            Title: 'This is the title',
-            Description: 'This is the description',
+        document: {
+          name: 'This is the name',
+          details: {
+            title: 'This is the title',
+            description: 'This is the description',
           },
-          Info: 'Some info'
+          info: 'Some info'
         }
       });
     });
@@ -283,15 +316,15 @@ three
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              ArrayOfObjects: {
+              arrayOfObjects: {
                 type: 'array',
                 items: {
                   type: 'object',
                   properties: {
-                    Name: {
+                    name: {
                       type: 'string',
                     }
                   },
@@ -299,26 +332,72 @@ three
                 }
               },
             },
-            required: ['ArrayOfObjects']
+            required: ['arrayOfObjects']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          ArrayOfObjects: {
-            'Item 1': {
-              Name: 'one',
+        document: {
+          arrayOfObjects: {
+            'item 1': {
+              name: 'one',
             },
-            'Item 2': {
-              Name: 'two',
+            'item 2': {
+              name: 'two',
             },
-            'Item 3': {
-              Name: 'three'
+            'item 3': {
+              name: 'three'
             },
           },
+        }
+      });
+    });
+
+    it('should handle optional (null) values for array types', async () => {
+      const markdown = `# Document
+
+## ArrayOfObjects
+
+## SomethingElse
+text
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          document: {
+            type: 'object',
+            properties: {
+              arrayOfObjects: {
+                type: ['array', 'null'],
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: {
+                      type: 'string',
+                    }
+                  },
+                  required: ['Name'],
+                }
+              },
+              somethingElse: {
+                type: 'string',
+              },
+            },
+            required: ['arrayOfObjects']
+          },
+        },
+        required: ['document']
+      };
+
+      const result = await parser.parseToObject(markdown, schema);
+      expect(result).toEqual({
+        document: {
+          arrayOfObjects: null,
+          somethingElse: 'text',
         }
       });
     });
@@ -341,29 +420,29 @@ three
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              ArrayOfText: {
+              arrayOfText: {
                 type: 'array',
                 items: {
                   type: 'string',
                 }
               },
             },
-            required: ['ArrayOfText']
+            required: ['arrayOfText']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const result = await parser.parseToObject(markdown, schema);
       expect(result).toEqual({
-        Document: {
-          ArrayOfText: {
-            'Item 1': 'one',
-            'Item 2': 'two',
-            'Item 3': 'three',
+        document: {
+          arrayOfText: {
+            'item 1': 'one',
+            'item 2': 'two',
+            'item 3': 'three',
           },
         }
       });
@@ -376,39 +455,39 @@ three
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              ArrayOfObjects: {
+              arrayOfObjects: {
                 type: 'array',
                 items: {
                   type: 'object',
                   properties: {
-                    Name: {
+                    name: {
                       type: 'string',
                     }
                   },
-                  required: ['Name'],
+                  required: ['name'],
                 }
               },
             },
-            required: ['ArrayOfObjects']
+            required: ['arrayOfObjects']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const obj = {
-        Document: {
-          ArrayOfObjects: {
+        document: {
+          arrayOfObjects: {
             'Item 1': {
-              Name: 'one',
+              name: 'one',
             },
             'Item 2': {
-              Name: 'two',
+              name: 'two',
             },
             'Item 3': {
-              Name: 'three'
+              name: 'three'
             },
           },
         }
@@ -417,16 +496,16 @@ three
       const result = parser.reformatToMatchSchema(obj, schema);
 
       expect(result).toEqual({
-        Document: {
-          ArrayOfObjects: [
+        document: {
+          arrayOfObjects: [
             {
-              Name: 'one',
+              name: 'one',
             },
             {
-              Name: 'two',
+              name: 'two',
             },
             {
-              Name: 'three'
+              name: 'three'
             },
           ],
         }
@@ -437,25 +516,25 @@ three
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Document: {
+          document: {
             type: 'object',
             properties: {
-              ArrayOfText: {
+              arrayOfText: {
                 type: 'array',
                 items: {
                   type: 'string',
                 }
               },
             },
-            required: ['ArrayOfText']
+            required: ['arrayOfText']
           },
         },
-        required: ['Document']
+        required: ['document']
       };
 
       const obj = {
-        Document: {
-          ArrayOfText: {
+        document: {
+          arrayOfText: {
             'Item 1': 'one',
             'Item 2': 'two',
             'Item 3': 'three'
@@ -466,8 +545,8 @@ three
       const result = parser.reformatToMatchSchema(obj, schema);
 
       expect(result).toEqual({
-        Document: {
-          ArrayOfText: ['one', 'two', 'three'],
+        document: {
+          arrayOfText: ['one', 'two', 'three'],
         }
       });
     });
@@ -502,39 +581,114 @@ Another great feature.`;
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
-          Title: { type: 'string' },
-          Description: { type: 'string' },
-          Features: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          features: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                Name: { type: 'string' },
-                Details: { type: 'string' }
+                name: { type: 'string' },
+                details: { type: 'string' }
               }
             }
           }
         },
-        required: ['Title']
+        required: ['title']
       };
 
       const result = parser.parse(markdown, schema);
 
       expect(result).toEqual({
-        Title: 'This is a product description.',
-        Description: 'More detailed information about the product.',
-        Features: [
+        title: 'This is a product description.',
+        description: 'More detailed information about the product.',
+        features: [
           {
-            Name: 'Feature 1',
-            Details: 'This is an amazing feature.'
+            name: 'Feature 1',
+            details: 'This is an amazing feature.'
           },
           {
-            Name: 'Feature 2',
-            Details: 'Another great feature.'
+            name: 'Feature 2',
+            details: 'Another great feature.'
           }
         ]
       });
 
+    });
+
+
+    it('should parse and validate optional (null) values', async () => {
+      const markdown = `# Document
+
+## Description
+
+## Title
+This is the title content.
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          document: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              description: { type: ['string', 'null'] }
+            },
+            required: ['title']
+          },
+        },
+        required: ['document']
+      };
+
+      const result = parser.parse(markdown, schema);
+
+      expect(result).toEqual({
+        document: {
+          title: 'This is the title content.',
+          description: null
+        }
+      });
+    });
+
+
+    it('should parse and validate optional (null) values for array types', async () => {
+      const markdown = `# Document
+
+## ArrayOfObjects
+`;
+
+      const schema: SimpleJSONSchema = {
+        type: 'object',
+        properties: {
+          document: {
+            type: 'object',
+            properties: {
+              arrayOfObjects: {
+                type: ['array', 'null'],
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: {
+                      type: 'string',
+                    }
+                  },
+                  required: ['Name'],
+                }
+              },
+            },
+            required: ['arrayOfObjects']
+          },
+        },
+        required: ['document']
+      };
+
+      const result = parser.parse(markdown, schema);
+      expect(result).toEqual({
+        document: {
+          arrayOfObjects: null,
+        }
+      });
     });
 
   });
