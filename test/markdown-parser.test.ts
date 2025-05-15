@@ -656,6 +656,9 @@ This is the title content.
       const markdown = `# Document
 
 ## ArrayOfObjects
+
+## SomethingElse
+test
 `;
 
       const schema: SimpleJSONSchema = {
@@ -676,6 +679,9 @@ This is the title content.
                   required: ['Name'],
                 }
               },
+              somethingElse: {
+                type: 'string'
+              },
             },
             required: ['arrayOfObjects']
           },
@@ -687,6 +693,7 @@ This is the title content.
       expect(result).toEqual({
         document: {
           arrayOfObjects: null,
+          somethingElse: 'test',
         }
       });
     });
