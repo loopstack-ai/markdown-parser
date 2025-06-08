@@ -1,4 +1,4 @@
-import { set, get } from 'lodash-es';
+import { set, get } from 'lodash';
 import Ajv from 'ajv';
 import { Heading, List, ListItem, Literal, Node, Parent, Root } from 'mdast';
 import remark from './utils/remark-wrapper';
