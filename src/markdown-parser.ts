@@ -1,9 +1,7 @@
 import { set, get } from 'lodash-es';
 import Ajv from 'ajv';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import { Root } from 'remark-parse/lib';
-import { Heading, List, ListItem, Literal, Node, Parent } from 'mdast';
+import { Heading, List, ListItem, Literal, Node, Parent, Root } from 'mdast';
+import remark from './utils/remark-wrapper';
 
 export interface SimpleJSONSchema {
   type: string;
@@ -222,8 +220,8 @@ export class MarkdownParser {
     return context.result;
   }
 
-  private getAst(content: string): Root {
-    return unified().use(remarkParse).parse(content);
+  private async getAst(content: string): Promise<Root> {
+    return await remark.parseMarkdown(content);
   }
 
   /**
@@ -278,18 +276,17 @@ export class MarkdownParser {
     return obj;
   }
 
-  parseToObject<T>(content: string, schema: SimpleJSONSchema): T {
-    const ast = this.getAst(content);
+  async parseToObject<T>(content: string, schema: SimpleJSONSchema): Promise<T> {
+    const ast = await this.getAst(content);
     const context = new ContextDto(schema);
     const obj = this.reduceAstToObject(ast, context);
     return obj as T;
   }
 
-  parse<T>(content: string, schema: SimpleJSONSchema): T {
-    const parsedObject = this.parseToObject(content, schema);
+  async parse<T>(content: string, schema: SimpleJSONSchema): Promise<T> {
+    const parsedObject = await this.parseToObject(content, schema);
     const result = this.reformatToMatchSchema(parsedObject, schema);
     this.validate(result, schema);
-
     return result as T;
   }
 

@@ -451,7 +451,7 @@ three
   });
 
   describe('reformatToMatchSchema', () => {
-    it('should reformat an array of objects', async () => {
+    it('should reformat an array of objects', () => {
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
@@ -512,7 +512,7 @@ three
       });
     });
 
-    it('should reformat an array of text', async () => {
+    it('should reformat an array of text', () => {
       const schema: SimpleJSONSchema = {
         type: 'object',
         properties: {
@@ -597,7 +597,7 @@ Another great feature.`;
         required: ['title']
       };
 
-      const result = parser.parse(markdown, schema);
+      const result = await parser.parse(markdown, schema);
 
       expect(result).toEqual({
         title: 'This is a product description.',
@@ -641,7 +641,7 @@ This is the title content.
         required: ['document']
       };
 
-      const result = parser.parse(markdown, schema);
+      const result = await parser.parse(markdown, schema);
 
       expect(result).toEqual({
         document: {
@@ -689,7 +689,7 @@ test
         required: ['document']
       };
 
-      const result = parser.parse(markdown, schema);
+      const result = await parser.parse(markdown, schema);
       expect(result).toEqual({
         document: {
           arrayOfObjects: null,
